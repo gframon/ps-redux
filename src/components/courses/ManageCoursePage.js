@@ -1,13 +1,23 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { connect } from "react-redux";
-import * as courseActions from "../../redux/actions/courseActions";
-import * as authorActions from "../../redux/actions/authorActions";
+import { loadCourses, saveCourse } from "../../redux/actions/courseActions";
+import { loadAuthors } from "../../redux/actions/authorActions";
 import PropTypes from "prop-types";
+import CourseForm from "./CourseForm";
+import { newCourse } from "../../../tools/mockData";
 
-class ManageCoursePage extends React.Component {
-  componentDidMount() {
-    const { authors, courses, loadAuthors, loadCourses } = this.props;
+function ManageCoursePage({
+  authors,
+  courses,
+  loadAuthors,
+  loadCourses,
+  saveCourse,
+  ...props
+}) {
+  const [course, setCourse] = useState({ ...props.course });
+  const [errors, setErrors] = useState({});
 
+  useEffect(() => {
     if (courses.length === 0) {
       loadCourses().catch((error) => {
         alert(`Loading courses failed.  ${error}`);
@@ -19,34 +29,53 @@ class ManageCoursePage extends React.Component {
         alert(`Loading authors failed.  ${error}`);
       });
     }
+  }, []);
+
+  function handleChange(event) {
+    const { name, value } = event.target;
+    setCourse((prevCourse) => ({
+      ...prevCourse,
+      [name]: name === "authorId" ? parseInt(value, 10) : value,
+    }));
   }
 
-  render() {
-    return (
-      <>
-        <h2>Courses</h2>
-      </>
-    );
+  function handleSave(event) {
+    event.preventDefault();
+    saveCourse(course);
   }
+
+  return (
+    <CourseForm
+      course={course}
+      errors={errors}
+      authors={authors}
+      onChange={handleChange}
+      onSave={handleSave}
+    />
+  );
 }
 
 ManageCoursePage.propTypes = {
+  course: PropTypes.object.isRequired,
   authors: PropTypes.array.isRequired,
   courses: PropTypes.array.isRequired,
   loadAuthors: PropTypes.func.isRequired,
   loadCourses: PropTypes.func.isRequired,
+  saveCourse: PropTypes.func.isRequired,
 };
 
 function mapStateToProps(state) {
   return {
+    course: newCourse,
     courses: state.courses,
     authors: state.authors,
   };
 }
 
 const mapDispatchToProps = {
-  loadCourses: courseActions.loadCourses,
-  loadAuthors: authorActions.loadAuthors,
+  loadCourses,
+  loadAuthors,
+  saveCourse,
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(ManageCoursePage);
